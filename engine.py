@@ -1,4 +1,5 @@
 import json
+import re
 from io import BytesIO
 from pathlib import Path
 
@@ -214,6 +215,17 @@ def add_table(doc, headings, rows, widths=None):
     return table
 
 
+def document_title(index, config):
+    return f"{TITLES[index]} — {config['mapel'].strip()} Kelas {config['kelas'].strip()}"
+
+
+def document_filename(index, config):
+    # Keep Unicode subject names while removing path separators and unsafe characters.
+    def component(value):
+        return re.sub(r"[^\w-]+", "_", value.strip(), flags=re.UNICODE).strip("_") or "Asesmen"
+    return f"{index + 1:02d}_{component(TITLES[index])}_{component(config['mapel'])}_Kelas_{component(config['kelas'])}.docx"
+
+
 def export_doc(index, config, outline, rows):
     doc = Document()
     sec = doc.sections[0]
@@ -230,7 +242,7 @@ def export_doc(index, config, outline, rows):
     field.set(qn("w:instr"), "PAGE")
     footer.add_run("Halaman ")
     footer._p.append(field)
-    title = doc.add_paragraph(TITLES[index], "Title")
+    title = doc.add_paragraph(document_title(index, config), "Title")
     border = OxmlElement("w:pBdr")
     bottom = OxmlElement("w:bottom")
     bottom.set(qn("w:val"), "nil")

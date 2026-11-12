@@ -6,7 +6,7 @@ import streamlit as st
 from streamlit.errors import StreamlitSecretNotFoundError
 
 from engine import (MAX_CHARS, MODEL, TITLES, TYPES, curriculum, export_doc,
-                    extract, generate_batch, plan, validate_curriculum)
+                    extract, generate_batch, plan, validate_curriculum, document_filename, document_title)
 
 from ui import apply_style, hero, next_step, overview, section
 
@@ -125,8 +125,8 @@ except ValueError as exc:
     st.warning(str(exc))
     st.stop()
 
-st.download_button("Unduh Dasaran Asesmen", export_doc(0, config, outline, []),
-                   file_name="01_Dasaran_Asesmen.docx",
+st.download_button(f"Unduh {document_title(0, config)}", export_doc(0, config, outline, []),
+                   file_name=document_filename(0, config),
                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
 section(3, "Soal & dokumen", "Bangun asesmen bertahap, kemudian siapkan tujuh dokumen Word.")
@@ -166,7 +166,7 @@ if current == len(targets):
         st.session_state["exports"] = [export_doc(i, config, outline, items) for i in range(len(TITLES))]
     if "exports" in st.session_state:
         for index, (title, data) in enumerate(zip(TITLES, st.session_state["exports"]), 1):
-            filename = f"{index:02d}_{title.replace(' ', '_')}.docx"
-            st.download_button(f"Unduh {index:02d} {title}", data, file_name=filename,
+            filename = document_filename(index - 1, config)
+            st.download_button(f"Unduh {index:02d} {document_title(index - 1, config)}", data, file_name=filename,
                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                                key=f"download_{index}")
