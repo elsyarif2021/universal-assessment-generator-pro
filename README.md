@@ -32,3 +32,9 @@ Untuk menjalankan secara lokal, buat `.streamlit/secrets.toml` dari `.streamlit/
 5. Klik **Siapkan tujuh dokumen Word** dan unduh setiap berkas. Guru perlu memeriksa seluruh draf sebelum penggunaan.
 
 Materi dikirim ke Ollama Cloud saat generasi. Hindari data pribadi siswa. Nilai akhir memakai skala 100 berdasarkan total skor mentah pada rubrik.
+
+## Tampilan ruang kerja
+
+Antarmuka memakai palet hijau zamrud, emas, dan gading, dengan basmalah serta ornamen geometris Islami. Sidebar menjelaskan tiga tahap penyusunan; ringkasan menampilkan jumlah soal, durasi, bahasa, dan keluaran dokumen. Tata letak menyesuaikan layar ponsel.
+
+Gaya visual berada di `style.css`, komponen presentasi di `ui.py`, dan tema dasar di `.streamlit/config.toml`. Tidak memerlukan font, gambar, atau dependensi baru dari layanan eksternal. Alur generasi dan ekspor dokumen tetap menggunakan `engine.py`.

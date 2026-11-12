@@ -8,9 +8,11 @@ from streamlit.errors import StreamlitSecretNotFoundError
 from engine import (MAX_CHARS, MODEL, TITLES, TYPES, curriculum, export_doc,
                     extract, generate_batch, plan, validate_curriculum)
 
-st.set_page_config(page_title="Universal Assessment Generator Pro", layout="wide")
-st.title("Universal Assessment Generator Pro")
-st.caption("Penyusun perangkat asesmen SMA/MA • Python dan Ollama Cloud")
+from ui import apply_style, hero, next_step, overview, section
+
+st.set_page_config(page_title="Universal Assessment Generator Pro", page_icon="✦", layout="wide")
+apply_style()
+hero()
 
 try:
     secret_key = st.secrets.get("OLLAMA_API_KEY")
@@ -19,12 +21,18 @@ except StreamlitSecretNotFoundError:
 key = secret_key.strip() if isinstance(secret_key, str) else ""
 
 with st.sidebar:
-    st.header("Koneksi Ollama Cloud")
+    st.html('<div class="sidebar-brand"><span class="brand-mark">✦</span><div><strong>Universal Assessment</strong><small>GENERATOR PRO</small></div></div>')
+    st.html('<div class="side-label">ALUR PENYUSUNAN</div><div class="side-step"><span>01</span>Siapkan materi</div><div class="side-step"><span>02</span>Susun tujuan pembelajaran</div><div class="side-step"><span>03</span>Soal &amp; dokumen</div>')
+    st.divider()
+    st.subheader("Pengaturan AI")
     model = st.text_input("Model Ollama Cloud", value=os.getenv("OLLAMA_MODEL") or MODEL).strip()
-    st.caption("API key dikonfigurasi melalui Streamlit Secrets." if key else "API key belum dikonfigurasi.")
+    st.html('<div class="connection ready">● Kunci AI tersedia</div>' if key else '<div class="connection">○ Koneksi AI belum diatur</div>')
+    st.caption("Kunci dikonfigurasi oleh admin melalui Streamlit Secrets.")
     st.caption("Materi dikirim ke Ollama Cloud saat tombol generasi ditekan. Hindari memasukkan data pribadi siswa.")
+    st.html('<p class="sidebar-note">✦ Dibantu AI, ditelaah pendidik.<br>Setiap draf adalah awal karya. Ketelitian dan pertimbangan guru menyempurnakannya.</p>')
 
-with st.expander("Konfigurasi asesmen", expanded=True):
+st.caption("RUANG KERJA / PENYUSUNAN ASESMEN")
+with st.expander("Identitas & komposisi asesmen", expanded=True):
     c1, c2, c3 = st.columns(3)
     jenjang = c1.text_input("Jenjang", "SMA")
     kelas = c2.text_input("Kelas", "XII")
@@ -41,7 +49,8 @@ with st.expander("Konfigurasi asesmen", expanded=True):
 
 config = dict(jenjang=jenjang, kelas=kelas, semester=semester, kurikulum=kurikulum,
               mapel=mapel, bahasa=bahasa, topik=topik, jumlah=counts, durasi=durasi)
-st.header("1. Materi pelajaran")
+overview(sum(counts), durasi, bahasa)
+section(1, "Materi pelajaran", "Mulai dari sumber yang tepat. Unggah bahan ajar atau tulis materi Anda.")
 uploaded = st.file_uploader("Unggah PDF berteks, DOCX, atau TXT • maksimum 20 MB", type=["pdf", "docx", "txt"])
 manual = st.text_area("Tulis atau tempel materi manual", height=180,
                       placeholder="Contoh: perubahan sosial mencakup perubahan pola interaksi, nilai, norma, dan lembaga sosial.")
@@ -85,7 +94,7 @@ if not key:
 elif not model:
     st.info("Isi model Ollama Cloud untuk menjalankan generasi.")
 
-st.header("2. CP, TP, dan ATP")
+section(2, "Tujuan pembelajaran", "Susun CP, TP, dan ATP yang selaras dengan materi, lalu telaah hasilnya.")
 if st.button("Isi otomatis CP, TP, dan ATP", type="primary", disabled=not (valid_source and key and model)):
     with st.spinner("Ollama Cloud sedang menyusun tujuan pembelajaran…"):
         try:
@@ -99,6 +108,7 @@ if st.button("Isi otomatis CP, TP, dan ATP", type="primary", disabled=not (valid
 if st.session_state.get("source_id") != source_id:
     if st.session_state.get("outline"):
         st.info("Materi atau identitas pembelajaran berubah. Isi ulang CP, TP, dan ATP untuk melanjutkan.")
+    next_step()
     st.stop()
 
 st.caption("Draf AI — perlu verifikasi guru. Isi dapat disunting sebelum membuat soal.")
@@ -119,7 +129,7 @@ st.download_button("Unduh Dasaran Asesmen", export_doc(0, config, outline, []),
                    file_name="01_Dasaran_Asesmen.docx",
                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
-st.header("3. Soal dan dokumen")
+section(3, "Soal & dokumen", "Bangun asesmen bertahap, kemudian siapkan tujuh dokumen Word.")
 targets = plan(config)
 if not targets or not bahasa.strip():
     st.warning("Isi bahasa soal dan tetapkan sedikitnya satu butir.")
