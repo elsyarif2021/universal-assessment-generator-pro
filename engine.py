@@ -128,11 +128,30 @@ def validate_curriculum(data):
     return {"cp": cp, "tp": tp, "atp": atp}
 
 
+COGNITIVE_LEVELS = {
+    "C1": "Mengingat", "C2": "Memahami", "C3": "Menerapkan",
+    "C4": "Menganalisis", "C5": "Mengevaluasi", "C6": "Mencipta",
+}
+
+
 def plan(config):
+    selected = config.get("levels")
+    if selected is not None:
+        if not selected or any(level not in COGNITIVE_LEVELS for level in selected):
+            raise ValueError("Pilih sedikitnya satu level soal C1–C6.")
+        selected = [level for level in COGNITIVE_LEVELS if level in selected]
     result = []
     for kind, count in zip(TYPES, config["jumlah"]):
-        for _ in range(count):
-            result.append({"nomor": len(result) + 1, "jenis": kind})
+        allowed = selected
+        if selected is not None and kind.startswith("PG"):
+            allowed = [level for level in selected if level != "C6"]
+            if count and not allowed:
+                raise ValueError("C6 (Mencipta) memerlukan esai. Atur jumlah PG menjadi 0 atau tambahkan level C1–C5.")
+        for number in range(count):
+            spec = {"nomor": len(result) + 1, "jenis": kind}
+            if selected is not None:
+                spec["level"] = allowed[number % len(allowed)]
+            result.append(spec)
     return result
 
 
@@ -150,7 +169,7 @@ def validate_items(data, expected, goals):
         kind = spec["jenis"]
         row["jenis"] = kind
         is_pg = kind.startswith("PG")
-        levels = ("C4", "C5") if kind == TYPES[1] else ("C4", "C5", "C6") if kind == TYPES[3] else ("C1", "C2", "C3")
+        levels = (spec["level"],) if "level" in spec else (("C4", "C5") if kind == TYPES[1] else ("C4", "C5", "C6") if kind == TYPES[3] else ("C1", "C2", "C3"))
         if row["level"] not in levels:
             raise ValueError(f"Level kognitif soal {row['nomor']} tidak sesuai.")
         if is_pg:
@@ -178,7 +197,8 @@ def generate_batch(key, model, config, material, outline, expected, previous):
         'Buat soal untuk nomor dan jenis persis seperti daftar permintaan. '
         'Gunakan bahasa pada konfigurasi.bahasa untuk naskah, opsi, pokok jawaban esai, pembahasan, indikator, dan kriteria. '
         'Sesuaikan isi dan kesulitan dengan konfigurasi.jenjang, konfigurasi.kelas, dan konfigurasi.mapel. '
-        'PG reguler dan esai reguler C1–C3, PG penalaran C4–C5, esai penalaran C4–C6. '
+        'Jika permintaan mencantumkan level, ikuti level setiap nomor persis, terlepas dari label reguler/penalaran. '
+        'Jika level tidak ditentukan, PG reguler dan esai reguler C1–C3, PG penalaran C4–C5, esai penalaran C4–C6. '
         'Untuk C6 minta rancangan asli yang dapat dinilai. Buat stimulus yang mandiri, '
         'opsi kredibel dan satu jawaban benar. Jangan memasukkan kunci ke naskah. '
         'Berikan pembahasan, analisis kualitatif spesifik, dan empat kriteria penilaian esai. '
@@ -270,6 +290,7 @@ def export_doc(index, config, outline, rows):
     doc.add_paragraph(f'{config["mapel"]} | {config["jenjang"]} kelas {config["kelas"]} | Semester {config["semester"]}')
     doc.add_paragraph(f'{config["kurikulum"]} | {config["topik"]}')
     doc.add_paragraph("Draf untuk telaah dan persetujuan guru")
+    doc.add_paragraph("Level soal: " + (", ".join(config["levels"]) if config.get("levels") else "Otomatis sesuai jenis soal"))
     goals = {t["id"]: t for t in outline["tp"]}
     total = sum(q["skor"] for q in rows)
     if index == 0:

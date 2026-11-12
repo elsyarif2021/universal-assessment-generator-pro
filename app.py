@@ -6,7 +6,7 @@ import uuid
 import streamlit as st
 from streamlit.errors import StreamlitSecretNotFoundError
 
-from engine import (MAX_CHARS, MODEL, TITLES, TYPES, curriculum, export_doc,
+from engine import (COGNITIVE_LEVELS, MAX_CHARS, MODEL, TITLES, TYPES, curriculum, export_doc,
                     extract, generate_batch, plan, validate_curriculum, document_filename, document_title, export_zip, package_name)
 
 from school_options import DEFAULT_GRADES, GRADES, LANGUAGES, LEVELS, subject_options
@@ -61,10 +61,32 @@ with st.expander("Identitas & komposisi asesmen", expanded=True):
     counts = [int(col.number_input(label, 0, 100, value, step=1))
               for col, label, value in zip(columns, TYPES, (30, 10, 3, 2))]
     durasi = int(columns[-1].number_input("Durasi (menit)", 1, 360, 90, step=1))
-    st.caption(f"Total {sum(counts)} butir • Opsi PG A–E • PG penalaran C4–C5 • Esai penalaran C4–C6")
+    level_labels = {f"{code} — {name}": code for code, name in COGNITIVE_LEVELS.items()}
+    level_mode = st.selectbox(
+        "Level soal", ["Otomatis sesuai jenis soal", *level_labels, "Campuran — pilih beberapa level"],
+        key="level_mode",
+    )
+    levels = None
+    if level_mode == "Campuran — pilih beberapa level":
+        levels = st.multiselect(
+            "Level yang digunakan", list(COGNITIVE_LEVELS), default=list(COGNITIVE_LEVELS),
+            format_func=lambda code: f"{code} — {COGNITIVE_LEVELS[code]}", key="mixed_levels",
+        )
+    elif level_mode in level_labels:
+        levels = [level_labels[level_mode]]
+    st.caption(f"Total {sum(counts)} butir • Opsi PG A–E. Otomatis: reguler C1–C3, PG penalaran C4–C5, esai penalaran C4–C6.")
+    if levels is not None:
+        st.caption("Level pilihan berlaku untuk semua kelompok soal. Campuran dibagi bergiliran per kelompok; C6 khusus esai. Jika jumlah soal sedikit, tidak semua level campuran akan mendapat butir.")
 
 config = dict(jenjang=jenjang, kelas=kelas, semester=semester, kurikulum=kurikulum,
-              mapel=mapel, bahasa=bahasa, topik=topik, jumlah=counts, durasi=durasi)
+              mapel=mapel, bahasa=bahasa, topik=topik, jumlah=counts, durasi=durasi, levels=levels)
+try:
+    targets = plan(config)
+    valid_levels = True
+except ValueError as exc:
+    st.warning(str(exc))
+    targets = []
+    valid_levels = False
 overview(sum(counts), durasi, bahasa)
 section(1, "Materi pelajaran", "Mulai dari sumber yang tepat. Unggah bahan ajar atau tulis materi Anda.")
 uploaded = st.file_uploader("Unggah PDF berteks, DOCX, atau TXT • maksimum 20 MB", type=["pdf", "docx", "txt"])
@@ -99,7 +121,7 @@ st.caption(f"{len(material):,} dari {MAX_CHARS:,} karakter materi. Jika diisi ke
 def signature(obj):
     return hashlib.sha256(json.dumps(obj, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
 
-source_config = {k: v for k, v in config.items() if k not in ("jumlah", "durasi", "bahasa")}
+source_config = {k: v for k, v in config.items() if k not in ("jumlah", "durasi", "bahasa", "levels")}
 source_id = signature([source_config, material])
 valid_source = all(str(value).strip() for value in source_config.values()) and bool(material) and not file_error
 if len(material) > MAX_CHARS:
@@ -111,7 +133,7 @@ elif not model:
     st.info("Isi model Ollama Cloud untuk menjalankan generasi.")
 
 section(2, "Tujuan pembelajaran", "Susun CP, TP, dan ATP yang selaras dengan materi, lalu telaah hasilnya.")
-if st.button("Isi otomatis CP, TP, dan ATP", type="primary", disabled=not (valid_source and key and model)):
+if st.button("Isi otomatis CP, TP, dan ATP", type="primary", disabled=not (valid_source and valid_levels and key and model)):
     with st.spinner("Ollama Cloud sedang menyusun tujuan pembelajaran…"):
         try:
             outline = curriculum(key, model, source_config, material)
@@ -146,7 +168,6 @@ st.download_button(f"Unduh {document_title(0, config)}", export_doc(0, config, o
                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
 section(3, "Soal & dokumen", "Bangun asesmen bertahap, kemudian siapkan tujuh dokumen Word.")
-targets = plan(config)
 if not targets or not bahasa.strip():
     st.warning("Isi bahasa soal dan tetapkan sedikitnya satu butir.")
     st.stop()

@@ -55,3 +55,9 @@ Setelah klik **Siapkan tujuh dokumen Word**, paket ZIP dan ringkasan hasil otoma
 ## Jenjang, kelas, mata pelajaran, dan bahasa
 
 Dropdown jenjang menyediakan SD, SMP, dan SMA. Pilihan kelas otomatis menjadi I–VI, VII–IX, atau X–XII; pilihan mata pelajaran mengikuti jenjang (IPAS/IPA/IPS mulai kelas III pada preset SD). Tersedia pelajaran umum, agama/madrasah, seni, serta muatan daerah; daftar merupakan pilihan praktis, bukan penetapan mata pelajaran wajib. Bahasa soal menyediakan Indonesia, Inggris, Arab, Sunda, dan Jawa. Semua dropdown tetap menyediakan **Lainnya — tulis manual** untuk kebutuhan sekolah yang berbeda. Konfigurasi terpilih diteruskan ke AI, dengan instruksi menyesuaikan kesulitan dan kosakata dengan peserta didik.
+
+## Level kognitif C1–C6
+
+**Level soal** menyediakan C1 Mengingat, C2 Memahami, C3 Menerapkan, C4 Menganalisis, C5 Mengevaluasi, C6 Mencipta, serta campuran beberapa level. Mode **Otomatis sesuai jenis soal** mempertahankan pembagian sebelumnya. Dalam mode pilihan, level berlaku untuk seluruh kelompok reguler maupun penalaran, dibagi bergiliran per kelompok. Jika jumlah butir lebih kecil dari jumlah level, tidak semua level campuran akan mendapat butir.
+
+C6 hanya untuk esai agar peserta didik dapat membuat karya/rancangan asli. Jika memilih C6 saja, jumlah kedua kelompok PG harus 0. Pada campuran, PG memakai pilihan C1–C5 dan esai memakai seluruh level terpilih. Respons AI diperiksa terhadap level tiap nomor; batch yang tidak sesuai ditolak. Pilihan level juga dicantumkan dalam dokumen, dan mengubahnya mereset progres soal sesuai konfigurasi baru.
