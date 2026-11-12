@@ -8,7 +8,7 @@ from streamlit.errors import StreamlitSecretNotFoundError
 from engine import (MAX_CHARS, MODEL, TITLES, TYPES, curriculum, export_doc,
                     extract, generate_batch, plan, validate_curriculum, document_filename, document_title, export_zip, package_name)
 
-from ui import apply_style, hero, next_step, overview, section
+from ui import apply_style, dropdown_or_manual, hero, next_step, overview, section
 
 st.set_page_config(page_title="Universal Assessment Generator Pro", page_icon="✦", layout="wide")
 apply_style()
@@ -35,10 +35,18 @@ st.caption("RUANG KERJA / PENYUSUNAN ASESMEN")
 with st.expander("Identitas & komposisi asesmen", expanded=True):
     c1, c2, c3 = st.columns(3)
     jenjang = c1.text_input("Jenjang", "SMA")
-    kelas = c2.text_input("Kelas", "XII")
-    semester = c3.text_input("Semester", "Ganjil")
+    kelas = dropdown_or_manual(c2, "Kelas", ("I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"), "XII", "kelas")
+    semester = dropdown_or_manual(c3, "Semester", ("Ganjil", "Genap"), "Ganjil", "semester")
     kurikulum = c1.text_input("Kurikulum", "Kurikulum Merdeka")
-    mapel = c2.text_input("Mata pelajaran", "Sosiologi")
+    mapel = dropdown_or_manual(
+        c2, "Mata pelajaran",
+        ("Pendidikan Agama Islam dan Budi Pekerti", "Pendidikan Pancasila", "Bahasa Indonesia",
+         "Matematika", "Bahasa Inggris", "IPAS", "IPA", "IPS", "Fisika", "Kimia", "Biologi",
+         "Sejarah", "Geografi", "Ekonomi", "Sosiologi", "Informatika", "PJOK", "Seni Budaya",
+         "Prakarya", "Bahasa Arab", "Al-Qur'an Hadis", "Akidah Akhlak", "Fikih",
+         "Sejarah Kebudayaan Islam", "Bahasa Sunda"),
+        "Sosiologi", "mapel",
+    )
     bahasa = c3.text_input("Bahasa soal", "Indonesia")
     topik = st.text_input("Topik atau bab", "Bab 1 Perubahan Sosial dan Bab 2 Globalisasi dan Masyarakat Digital")
     columns = st.columns(5)

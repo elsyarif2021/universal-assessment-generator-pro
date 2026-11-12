@@ -37,3 +37,17 @@ def section(number, title, description):
 def next_step():
     st.html('''<div class="next-step"><span>TAHAP BERIKUTNYA</span><h3>Soal &amp; dokumen siap pakai</h3>
     <p>Lengkapi materi dan susun tujuan pembelajaran terlebih dahulu. Setelah ditelaah, lanjutkan membuat soal, kunci jawaban, pembahasan, dan rubrik.</p></div>''')
+
+
+def dropdown_or_manual(container, label, options, default, key):
+    manual_option = "Lainnya — tulis manual"
+    selected = container.selectbox(
+        label, [*options, manual_option], index=options.index(default),
+        key=f"{key}_choice",
+    )
+    if selected == manual_option:
+        return container.text_input(
+            f"{label} (tulis manual)", key=f"{key}_manual",
+            placeholder=f"Masukkan {label.lower()} Anda",
+        ).strip()
+    return selected
