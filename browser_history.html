@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="id">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box}body{font:14px/1.6 system-ui,sans-serif;color:#183d35;margin:0;padding:6px 4px;background:transparent}button,a{font:inherit}button,.download{border:1px solid #c8d8c9;background:#fff;color:#184d3a;border-radius:8px;padding:7px 12px;cursor:pointer;text-decoration:none;display:inline-block;font-size:12px}button:hover,.download:hover{background:#e8efe4}button:focus-visible,a:focus-visible{outline:3px solid #bb9245;outline-offset:2px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:6px 0 14px}.muted{color:#657468;font-size:12px}#status{border-radius:8px;padding:10px 12px;background:#e7eee1;margin:8px 0}#status.error{background:#fff0e7;color:#803b20}#status:empty{display:none}.entry{border:1px solid #dce4d7;border-radius:12px;background:#fff;margin:10px 0;padding:14px 16px}.entry h3{font-size:14px;margin:0 0 4px;overflow-wrap:anywhere}.entry p{margin:4px 0;overflow-wrap:anywhere}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.download{background:#17513e;color:white;border-color:#17513e}.download:hover{background:#24684f}.delete{color:#8b3a31}#empty{border:1px dashed #b9cbb5;padding:20px;border-radius:10px;color:#657468}.note{padding-top:12px;border-top:1px solid #dce4d7;font-size:12px;color:#657468}.confirm{background:#f8f0dc;padding:10px;border-radius:8px;margin:8px 0}.confirm button{margin:5px 8px 0 0}h3,p{white-space:normal}
+</style></head>
+<body>
+<p class="muted">Hasil tersimpan otomatis setelah Anda menyiapkan tujuh dokumen Word. Maksimum 10 hasil di browser ini.</p>
+<div id="status" role="status" aria-live="polite"></div>
+<div class="toolbar"><strong id="count">Riwayat generasi</strong><button id="clear" type="button">Hapus semua</button></div>
+<div id="confirm" hidden class="confirm">Hapus semua riwayat dari browser ini?<br><button id="confirm-clear" type="button">Ya, hapus semua</button><button id="cancel-clear" type="button">Batal</button></div>
+<div id="list"></div>
+<p class="note">Disimpan hanya di browser dan alamat situs ini, tanpa basis data riwayat di server. Riwayat tidak berpindah perangkat dan dapat hilang jika data situs dibersihkan atau Anda memakai mode privat. Unduh ZIP sebagai cadangan. Berkas tetap diproses oleh aplikasi saat generasi dan unduhan.</p>
+<script>
+(() => {
+  const STORAGE_KEY = 'uagp.generation-history.v1';
+  const incoming = /*HISTORY_PAYLOAD*/null;
+  const MAX_ENTRIES = 10;
+  const status = document.getElementById('status');
+  const list = document.getElementById('list');
+  let entries = [];
+  let available = true;
+  function message(text, error=false) { status.textContent=text; status.className=error?'error':''; }
+  function valid(record) {
+    return record && typeof record.id==='string' && typeof record.archive==='string'
+      && /^[A-Za-z0-9+/]*={0,2}$/.test(record.archive) && record.archive.length>0
+      && ['subject','grade','semester','topic','filename','savedAt'].every(key=>typeof record[key]==='string')
+      && Number.isInteger(record.count) && record.filename.endsWith('.zip');
+  }
+  function load() {
+    try {
+      const raw=localStorage.getItem(STORAGE_KEY);
+      if (!raw) { entries=[]; return; }
+      const parsed=JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length>MAX_ENTRIES || !parsed.every(valid)) throw new Error('invalid');
+      entries=parsed;
+    } catch (_) {
+      available=false;
+      message('Riwayat tidak dapat dibaca. Penyimpanan browser mungkin diblokir atau datanya rusak. Data lama tidak ditimpa; unduh hasil saat ini langsung dari aplikasi. Gunakan Hapus semua untuk mereset riwayat.', true);
+    }
+  }
+  function persist(next) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); entries=next; return true; }
+    catch (_) { message('Hasil belum tersimpan: ruang browser penuh atau penyimpanan diblokir. Hapus riwayat yang tidak diperlukan, lalu klik Siapkan tujuh dokumen Word lagi. Unduhan langsung tetap tersedia.',true); return false; }
+  }
+  function element(tag, text, className) {
+    const el=document.createElement(tag);el.textContent=text;
+    if(className)el.className=className;
+    return el;
+  }
+  function download(record) {
+    try {
+      const bytes=Uint8Array.from(atob(record.archive), c=>c.charCodeAt(0));
+      const url=URL.createObjectURL(new Blob([bytes], {type:'application/zip'}));
+      const a=document.createElement('a');a.href=url;a.download=record.filename.replace(/[\\/]/g,'_');a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    } catch (_) { message('ZIP tidak dapat dibuka. Hapus entri yang rusak dan siapkan ulang dokumennya.',true); }
+  }
+  function render() {
+    list.replaceChildren();
+    document.getElementById('count').textContent=`${entries.length} dari ${MAX_ENTRIES} hasil tersimpan`;
+    if(!entries.length) { const empty=element('p','Belum ada riwayat. Siapkan tujuh dokumen Word untuk menyimpan hasil pertama.');empty.id='empty';list.append(empty); }
+    for (const record of entries) {
+      const card=element('article','', 'entry');
+      card.append(element('h3',`${record.subject} · Kelas ${record.grade}`));
+      card.append(element('p',`${record.semester} · ${record.count} butir · ${new Date(record.savedAt).toLocaleString('id-ID')}`, 'muted'));
+      card.append(element('p',record.topic));
+      const actions=element('div','', 'actions');
+      const open=element('button','Unduh kembali ZIP', 'download');open.type='button';open.onclick=()=>download(record);
+      const remove=element('button','Hapus', 'delete');remove.type='button';remove.setAttribute('aria-label',`Hapus ${record.subject} kelas ${record.grade}`);
+      remove.onclick=()=>{
+        remove.hidden=true;
+        const question=element('span','Hapus hasil ini? ');
+        const yes=element('button','Ya, hapus');yes.type='button';yes.onclick=()=>{if(persist(entries.filter(x=>x.id!==record.id))){message('Riwayat dihapus.');render();}};
+        const no=element('button','Batal');no.type='button';no.onclick=()=>{question.remove();yes.remove();no.remove();remove.hidden=false;};
+        actions.append(question,yes,no);
+      };
+      actions.append(open,remove);card.append(actions);list.append(card);
+    }
+  }
+  document.getElementById('clear').onclick=()=>{document.getElementById('confirm').hidden=false;};
+  document.getElementById('cancel-clear').onclick=()=>{document.getElementById('confirm').hidden=true;};
+  document.getElementById('confirm-clear').onclick=()=>{
+    try {localStorage.removeItem(STORAGE_KEY);entries=[];available=true;message('Semua riwayat di browser ini sudah dihapus.');render();document.getElementById('confirm').hidden=true;}
+    catch(_){message('Browser tidak mengizinkan penghapusan penyimpanan.',true);}
+  };
+  load();
+  if(incoming && available) {
+    const record={...incoming,savedAt:new Date().toISOString()};
+    if(valid(record)) {
+      const existing=entries.find(x=>x.id===record.id);
+      // Re-rendering an already saved result must not restore a deleted record.
+      const token='uagp.history-delivered.'+record.id;
+      let delivered=false;
+      try {delivered=sessionStorage.getItem(token)==='1';}catch(_){}
+      if(!delivered) {
+        const next=[record,...entries.filter(x=>x.id!==record.id)];
+        if(next.length>MAX_ENTRIES && !existing) message('Riwayat sudah berisi 10 hasil. Hapus salah satu hasil, lalu siapkan dokumen lagi untuk menyimpan hasil baru.',true);
+        else if(persist(next.slice(0,MAX_ENTRIES))) {
+          try {sessionStorage.setItem(token,'1');}catch(_){}
+          message('Tujuh dokumen berhasil disimpan di riwayat browser.');
+        }
+      }
+    } else message('Hasil tidak dapat disimpan karena format paket tidak valid.',true);
+  }
+  render();
+  window.addEventListener('storage',event=>{if(event.key===STORAGE_KEY){entries=[];available=true;load();render();}});
+})();
+</script></body></html>

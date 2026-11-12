@@ -42,3 +42,12 @@ Gaya visual berada di `style.css`, komponen presentasi di `ui.py`, dan tema dasa
 ## Unduh paket lengkap
 
 Setelah seluruh soal selesai, klik **Siapkan tujuh dokumen Word**, lalu **Unduh semua (ZIP)**. Arsip bernama `Asesmen_Sosiologi_Kelas_XII.zip` (mengikuti input) berisi folder dengan nama yang sama dan tujuh DOCX bernomor. Ekstrak ZIP untuk mendapatkan folder. Unduhan dokumen satu per satu tetap tersedia.
+
+## Riwayat generasi di browser
+
+Setelah klik **Siapkan tujuh dokumen Word**, paket ZIP dan ringkasan hasil otomatis disimpan di `localStorage` browser. Buka **Riwayat generasi di browser** untuk mengunduh kembali tujuh dokumen, menghapus satu hasil, atau menghapus semua riwayat dengan konfirmasi.
+
+- Maksimum 10 hasil; hasil lama tidak dihapus otomatis saat penuh. Batas ruang `localStorage` juga bergantung pada browser. Jika gagal menyimpan, aplikasi menampilkan pesan dan unduhan langsung tetap tersedia.
+- Riwayat hanya tersedia pada browser/profil dan alamat situs yang sama. Tidak disimpan ke berkas server, GitHub, atau basis data bersama. Pemrosesan generasi dan pembuatan dokumen tetap berjalan di sesi server seperti sebelumnya.
+- Yang disimpan: ZIP hasil, mata pelajaran, kelas, semester, topik, jumlah soal, dan waktu penyimpanan. API key dan teks materi sumber tidak ikut disimpan sebagai data riwayat.
+- Riwayat tidak tersinkron antarperangkat. Menghapus data situs atau memakai mode privat dapat menghilangkannya; unduh ZIP untuk cadangan. Gunakan profil browser pribadi karena pengguna profil yang sama dapat membaca riwayatnya.

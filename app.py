@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import uuid
 
 import streamlit as st
 from streamlit.errors import StreamlitSecretNotFoundError
@@ -8,11 +9,15 @@ from streamlit.errors import StreamlitSecretNotFoundError
 from engine import (MAX_CHARS, MODEL, TITLES, TYPES, curriculum, export_doc,
                     extract, generate_batch, plan, validate_curriculum, document_filename, document_title, export_zip, package_name)
 
+from browser_history import history_record, render_history
+
 from ui import apply_style, dropdown_or_manual, hero, next_step, overview, section
 
 st.set_page_config(page_title="Universal Assessment Generator Pro", page_icon="✦", layout="wide")
 apply_style()
 hero()
+with st.expander("Riwayat generasi di browser", expanded=bool(st.session_state.get("history_pending"))):
+    render_history(st.session_state.pop("history_pending", None))
 
 try:
     secret_key = st.secrets.get("OLLAMA_API_KEY")
@@ -172,6 +177,11 @@ if current == len(targets):
     st.success("Jumlah dan nomor butir lengkap. Periksa kunci, pembahasan, dan rubrik sebelum digunakan.")
     if st.button("Siapkan tujuh dokumen Word"):
         st.session_state["exports"] = [export_doc(i, config, outline, items) for i in range(len(TITLES))]
+        st.session_state["history_pending"] = history_record(
+            uuid.uuid4().hex, config, export_zip(config, st.session_state["exports"]),
+            f"{package_name(config)}.zip",
+        )
+        st.rerun()
     if "exports" in st.session_state:
         st.download_button(
             f"Unduh semua — {mapel.strip()} Kelas {kelas.strip()} (ZIP)",
