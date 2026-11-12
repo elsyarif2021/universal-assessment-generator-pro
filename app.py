@@ -9,6 +9,7 @@ from streamlit.errors import StreamlitSecretNotFoundError
 from engine import (MAX_CHARS, MODEL, TITLES, TYPES, curriculum, export_doc,
                     extract, generate_batch, plan, validate_curriculum, document_filename, document_title, export_zip, package_name)
 
+from school_options import DEFAULT_GRADES, GRADES, LANGUAGES, LEVELS, subject_options
 from browser_history import history_record, render_history
 
 from ui import apply_style, dropdown_or_manual, hero, next_step, overview, section
@@ -39,20 +40,22 @@ with st.sidebar:
 st.caption("RUANG KERJA / PENYUSUNAN ASESMEN")
 with st.expander("Identitas & komposisi asesmen", expanded=True):
     c1, c2, c3 = st.columns(3)
-    jenjang = c1.text_input("Jenjang", "SMA")
-    kelas = dropdown_or_manual(c2, "Kelas", ("I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"), "XII", "kelas")
+    jenjang = dropdown_or_manual(c1, "Jenjang", LEVELS, "SMA", "jenjang")
+    level_context = jenjang if jenjang in LEVELS else "manual"
+    grades = GRADES.get(jenjang, tuple(grade for group in GRADES.values() for grade in group))
+    kelas = dropdown_or_manual(
+        c2, "Kelas", grades, DEFAULT_GRADES.get(jenjang, "XII"), f"kelas_{level_context}",
+    )
     semester = dropdown_or_manual(c3, "Semester", ("Ganjil", "Genap"), "Ganjil", "semester")
     kurikulum = c1.text_input("Kurikulum", "Kurikulum Merdeka")
+    subjects = subject_options(jenjang, kelas)
     mapel = dropdown_or_manual(
-        c2, "Mata pelajaran",
-        ("Pendidikan Agama Islam dan Budi Pekerti", "Pendidikan Pancasila", "Bahasa Indonesia",
-         "Matematika", "Bahasa Inggris", "IPAS", "IPA", "IPS", "Fisika", "Kimia", "Biologi",
-         "Sejarah", "Geografi", "Ekonomi", "Sosiologi", "Informatika", "PJOK", "Seni Budaya",
-         "Prakarya", "Bahasa Arab", "Al-Qur'an Hadis", "Akidah Akhlak", "Fikih",
-         "Sejarah Kebudayaan Islam", "Bahasa Sunda"),
-        "Sosiologi", "mapel",
+        c2, "Mata pelajaran", subjects,
+        "Sosiologi" if jenjang == "SMA" else "Bahasa Indonesia",
+        f"mapel_{level_context}_{kelas}",
     )
-    bahasa = c3.text_input("Bahasa soal", "Indonesia")
+    bahasa = dropdown_or_manual(c3, "Bahasa soal", LANGUAGES, "Indonesia", "bahasa")
+    st.caption("Kelas dan mata pelajaran menyesuaikan jenjang. Daftar ini mencakup pilihan umum serta muatan madrasah/daerah; sesuaikan dengan kurikulum sekolah atau pilih Lainnya — tulis manual.")
     topik = st.text_input("Topik atau bab", "Bab 1 Perubahan Sosial dan Bab 2 Globalisasi dan Masyarakat Digital")
     columns = st.columns(5)
     counts = [int(col.number_input(label, 0, 100, value, step=1))

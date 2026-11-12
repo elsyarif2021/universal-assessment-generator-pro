@@ -51,3 +51,7 @@ Setelah klik **Siapkan tujuh dokumen Word**, paket ZIP dan ringkasan hasil otoma
 - Riwayat hanya tersedia pada browser/profil dan alamat situs yang sama. Tidak disimpan ke berkas server, GitHub, atau basis data bersama. Pemrosesan generasi dan pembuatan dokumen tetap berjalan di sesi server seperti sebelumnya.
 - Yang disimpan: ZIP hasil, mata pelajaran, kelas, semester, topik, jumlah soal, dan waktu penyimpanan. API key dan teks materi sumber tidak ikut disimpan sebagai data riwayat.
 - Riwayat tidak tersinkron antarperangkat. Menghapus data situs atau memakai mode privat dapat menghilangkannya; unduh ZIP untuk cadangan. Gunakan profil browser pribadi karena pengguna profil yang sama dapat membaca riwayatnya.
+
+## Jenjang, kelas, mata pelajaran, dan bahasa
+
+Dropdown jenjang menyediakan SD, SMP, dan SMA. Pilihan kelas otomatis menjadi I–VI, VII–IX, atau X–XII; pilihan mata pelajaran mengikuti jenjang (IPAS/IPA/IPS mulai kelas III pada preset SD). Tersedia pelajaran umum, agama/madrasah, seni, serta muatan daerah; daftar merupakan pilihan praktis, bukan penetapan mata pelajaran wajib. Bahasa soal menyediakan Indonesia, Inggris, Arab, Sunda, dan Jawa. Semua dropdown tetap menyediakan **Lainnya — tulis manual** untuk kebutuhan sekolah yang berbeda. Konfigurasi terpilih diteruskan ke AI, dengan instruksi menyesuaikan kesulitan dan kosakata dengan peserta didik.
