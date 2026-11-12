@@ -134,7 +134,15 @@ COGNITIVE_LEVELS = {
 }
 
 
+def option_letters(config):
+    count = config.get("option_count", 5)
+    if type(count) is not int or count not in (3, 4, 5):
+        raise ValueError("Opsi PG harus A–C, A–D, atau A–E.")
+    return "ABCDE"[:count]
+
+
 def plan(config):
+    option_letters(config)
     selected = config.get("levels")
     if selected is not None:
         if not selected or any(level not in COGNITIVE_LEVELS for level in selected):
@@ -155,7 +163,8 @@ def plan(config):
     return result
 
 
-def validate_items(data, expected, goals):
+def validate_items(data, expected, goals, option_count=5):
+    letters = option_letters({"option_count": option_count})
     rows = data.get("soal")
     if not isinstance(rows, list) or len(rows) != len(expected):
         raise ValueError("Jumlah soal dari Ollama Cloud tidak sesuai. Ulangi batch ini.")
@@ -174,11 +183,11 @@ def validate_items(data, expected, goals):
             raise ValueError(f"Level kognitif soal {row['nomor']} tidak sesuai.")
         if is_pg:
             options = row.get("opsi")
-            if not isinstance(options, list) or len(options) != 5:
-                raise ValueError("Setiap PG harus memiliki lima opsi.")
+            if not isinstance(options, list) or len(options) != len(letters):
+                raise ValueError(f"Setiap PG harus memiliki {len(letters)} opsi (A–{letters[-1]}).")
             row["opsi"] = [clean(opt, "opsi") for opt in options]
-            if len({" ".join(opt.casefold().split()) for opt in row["opsi"]}) != 5 or row.get("kunci") not in list("ABCDE"):
-                raise ValueError("Ada opsi duplikat atau kunci di luar A–E.")
+            if len({" ".join(opt.casefold().split()) for opt in row["opsi"]}) != len(letters) or row.get("kunci") not in letters:
+                raise ValueError(f"Ada opsi duplikat atau kunci di luar A–{letters[-1]}.")
             row["kriteria"] = []
             row["skor"] = 1.5
         else:
@@ -200,15 +209,17 @@ def generate_batch(key, model, config, material, outline, expected, previous):
         'Jika permintaan mencantumkan level, ikuti level setiap nomor persis, terlepas dari label reguler/penalaran. '
         'Jika level tidak ditentukan, PG reguler dan esai reguler C1–C3, PG penalaran C4–C5, esai penalaran C4–C6. '
         'Untuk C6 minta rancangan asli yang dapat dinilai. Buat stimulus yang mandiri, '
-        'opsi kredibel dan satu jawaban benar. Jangan memasukkan kunci ke naskah. '
+        'opsi kredibel dan satu jawaban benar. Jumlah opsi PG harus mengikuti konfigurasi.option_count (3, 4, atau 5; default 5). '
+        'Kunci PG harus dalam rentang A sampai huruf opsi terakhir. Jangan memasukkan kunci ke naskah. '
+        'Tulis naskah dan opsi sebagai teks bersih tanpa Markdown, tanpa nomor soal atau awalan huruf opsi; aplikasi akan menambahkannya. '
         'Berikan pembahasan, analisis kualitatif spesifik, dan empat kriteria penilaian esai. '
         'Struktur JSON {"soal":[{"nomor":1,"tp":"TP1","indikator":"...","level":"C2",'
-        '"naskah":"...","opsi":["...","...","...","...","..."],"kunci":"A",'
+        '"naskah":"...","opsi":["..."],"kunci":"A",'
         '"pembahasan":"...","analisis":"...","kriteria":[]}]}. '
         'Untuk esai opsi kosong dan kunci berupa pokok jawaban. Hindari pengulangan soal sebelumnya.'
     ), {"konfigurasi": config, "materi": material, "dasaran": outline,
         "permintaan": expected, "soal_sebelumnya": [q["naskah"] for q in previous]}, 12000)
-    result = validate_items(rows, expected, {t["id"] for t in outline["tp"]})
+    result = validate_items(rows, expected, {t["id"] for t in outline["tp"]}, len(option_letters(config)))
     stems = [" ".join(q["naskah"].casefold().split()) for q in previous + result]
     if len(stems) != len(set(stems)):
         raise ValueError("Terdeteksi naskah soal duplikat. Ulangi batch ini.")
@@ -265,6 +276,10 @@ def export_zip(config, documents):
     return buf.getvalue()
 
 
+def clean_exam_text(text):
+    return "\n".join(line.rstrip() for line in text.replace("**", "").replace("__", "").strip().splitlines())
+
+
 def export_doc(index, config, outline, rows):
     doc = Document()
     sec = doc.sections[0]
@@ -306,9 +321,44 @@ def export_doc(index, config, outline, rows):
         add_table(doc, ("No.", "TP dan Materi", "Indikator", "Level", "Bentuk", "Skor"),
                   ((q["nomor"], f'{q["tp"]} | {goals[q["tp"]]["materi"]}', q["indikator"], q["level"], q["jenis"], q["skor"]) for q in rows))
     elif index == 2:
-        doc.add_paragraph(f"Durasi {config['durasi']} menit. Pilih satu jawaban A–E pada soal yang memiliki opsi. Jawab soal lainnya secara tertulis.")
-        add_table(doc, ("No.", "Naskah Soal"),
-                          ((q["nomor"], "\n".join([q["naskah"]] + [f"{letter}. {opt}" for letter, opt in zip("ABCDE", q["opsi"])])) for q in rows), (1.2, 15.8))
+        letters = option_letters(config)
+        doc.add_paragraph(f"Durasi: {config['durasi']} menit | Opsi pilihan ganda: A–{letters[-1]}")
+        doc.add_paragraph("Nama: __________________________________    Kelas: __________")
+        doc.add_paragraph("Nomor peserta: __________________________    Tanggal: __________")
+        for heading, kinds, instruction in (
+            ("A. Pilihan Ganda (Reguler + TKA/HOTS)", TYPES[:2], f"Pilih satu jawaban yang paling tepat dari opsi A–{letters[-1]}."),
+            ("B. Essay (Reguler + TKA/HOTS)", TYPES[2:], "Jawablah secara jelas dan sistematis. Tuliskan langkah atau alasan yang mendukung jawaban Anda."),
+        ):
+            group = [q for q in rows if q["jenis"] in kinds]
+            if not group:
+                continue
+            doc.add_heading(heading, 1)
+            doc.add_paragraph(instruction)
+            for kind in kinds:
+                questions = [q for q in group if q["jenis"] == kind]
+                if not questions:
+                    continue
+                doc.add_heading("Soal TKA/HOTS" if "penalaran" in kind else "Soal Reguler", 2)
+                for question in questions:
+                    stem = clean_exam_text(question["naskah"])
+                    stem = re.sub(rf"^(?:Soal\s+)?{question['nomor']}[.)]\s+", "", stem, count=1, flags=re.IGNORECASE)
+                    para = doc.add_paragraph(f"{question['nomor']}. {stem}")
+                    fmt = para.paragraph_format
+                    fmt.left_indent = Cm(0.75)
+                    fmt.first_line_indent = Cm(-0.75)
+                    fmt.line_spacing = 1.15
+                    fmt.space_before = Pt(9)
+                    fmt.space_after = Pt(5)
+                    fmt.keep_with_next = bool(question["opsi"])
+                    for position, (letter, text) in enumerate(zip(letters, question["opsi"])):
+                        text = re.sub(rf"^{letter}[.)]\s+", "", clean_exam_text(text), count=1)
+                        option = doc.add_paragraph(f"{letter}. {text}")
+                        opt_fmt = option.paragraph_format
+                        opt_fmt.left_indent = Cm(1.25)
+                        opt_fmt.first_line_indent = Cm(-0.5)
+                        opt_fmt.space_after = Pt(3)
+                        opt_fmt.line_spacing = 1.15
+                        opt_fmt.keep_with_next = position < len(question["opsi"]) - 1
     elif index == 3:
         add_table(doc, ("No.", "Bentuk", "Kunci atau Pokok Jawaban"),
                   ((q["nomor"], q["jenis"], f'{q["kunci"]}. {q["opsi"]["ABCDE".index(q["kunci"])]}' if q["opsi"] else q["kunci"]) for q in rows))

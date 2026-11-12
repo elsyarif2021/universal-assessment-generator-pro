@@ -59,8 +59,10 @@ with st.expander("Identitas & komposisi asesmen", expanded=True):
     topik = st.text_input("Topik atau bab", "Bab 1 Perubahan Sosial dan Bab 2 Globalisasi dan Masyarakat Digital")
     columns = st.columns(5)
     counts = [int(col.number_input(label, 0, 100, value, step=1))
-              for col, label, value in zip(columns, TYPES, (30, 10, 3, 2))]
+              for col, label, value in zip(columns, ("PG Reguler", "PG TKA/HOTS", "Essay Reguler", "Essay TKA/HOTS"), (30, 10, 3, 2))]
     durasi = int(columns[-1].number_input("Durasi (menit)", 1, 360, 90, step=1))
+    option_range = st.selectbox("Opsi jawaban pilihan ganda", ("A–C (3 opsi)", "A–D (4 opsi)", "A–E (5 opsi)"), index=2, key="option_range")
+    option_count = {"A–C (3 opsi)": 3, "A–D (4 opsi)": 4, "A–E (5 opsi)": 5}[option_range]
     level_labels = {f"{code} — {name}": code for code, name in COGNITIVE_LEVELS.items()}
     level_mode = st.selectbox(
         "Level soal", ["Otomatis sesuai jenis soal", *level_labels, "Campuran — pilih beberapa level"],
@@ -74,12 +76,12 @@ with st.expander("Identitas & komposisi asesmen", expanded=True):
         )
     elif level_mode in level_labels:
         levels = [level_labels[level_mode]]
-    st.caption(f"Total {sum(counts)} butir • Opsi PG A–E. Otomatis: reguler C1–C3, PG penalaran C4–C5, esai penalaran C4–C6.")
+    st.caption(f"Total {sum(counts)} butir • Opsi PG A–{'ABCDE'[option_count - 1]}. Otomatis: reguler C1–C3, PG penalaran C4–C5, esai penalaran C4–C6.")
     if levels is not None:
         st.caption("Level pilihan berlaku untuk semua kelompok soal. Campuran dibagi bergiliran per kelompok; C6 khusus esai. Jika jumlah soal sedikit, tidak semua level campuran akan mendapat butir.")
 
 config = dict(jenjang=jenjang, kelas=kelas, semester=semester, kurikulum=kurikulum,
-              mapel=mapel, bahasa=bahasa, topik=topik, jumlah=counts, durasi=durasi, levels=levels)
+              mapel=mapel, bahasa=bahasa, topik=topik, jumlah=counts, durasi=durasi, levels=levels, option_count=option_count)
 try:
     targets = plan(config)
     valid_levels = True
@@ -121,7 +123,7 @@ st.caption(f"{len(material):,} dari {MAX_CHARS:,} karakter materi. Jika diisi ke
 def signature(obj):
     return hashlib.sha256(json.dumps(obj, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
 
-source_config = {k: v for k, v in config.items() if k not in ("jumlah", "durasi", "bahasa", "levels")}
+source_config = {k: v for k, v in config.items() if k not in ("jumlah", "durasi", "bahasa", "levels", "option_count")}
 source_id = signature([source_config, material])
 valid_source = all(str(value).strip() for value in source_config.values()) and bool(material) and not file_error
 if len(material) > MAX_CHARS:

@@ -61,3 +61,16 @@ Dropdown jenjang menyediakan SD, SMP, dan SMA. Pilihan kelas otomatis menjadi I�
 **Level soal** menyediakan C1 Mengingat, C2 Memahami, C3 Menerapkan, C4 Menganalisis, C5 Mengevaluasi, C6 Mencipta, serta campuran beberapa level. Mode **Otomatis sesuai jenis soal** mempertahankan pembagian sebelumnya. Dalam mode pilihan, level berlaku untuk seluruh kelompok reguler maupun penalaran, dibagi bergiliran per kelompok. Jika jumlah butir lebih kecil dari jumlah level, tidak semua level campuran akan mendapat butir.
 
 C6 hanya untuk esai agar peserta didik dapat membuat karya/rancangan asli. Jika memilih C6 saja, jumlah kedua kelompok PG harus 0. Pada campuran, PG memakai pilihan C1–C5 dan esai memakai seluruh level terpilih. Respons AI diperiksa terhadap level tiap nomor; batch yang tidak sesuai ditolak. Pilihan level juga dicantumkan dalam dokumen, dan mengubahnya mereset progres soal sesuai konfigurasi baru.
+
+## Naskah soal dan opsi jawaban
+
+Pilih **Opsi jawaban pilihan ganda**: A–C (3 opsi), A–D (4 opsi), atau A–E (5 opsi). Pilihan diteruskan ke AI dan diperiksa: jumlah opsi serta rentang kunci harus sesuai. Perubahan pilihan mereset progres soal untuk konfigurasi baru.
+
+Naskah Word memakai paragraf berindentasi, bukan tabel soal, dengan struktur:
+
+- **A. Pilihan Ganda (Reguler + TKA/HOTS)**: subbagian Soal Reguler dan Soal TKA/HOTS; setiap opsi ditulis pada baris sendiri.
+- **B. Essay (Reguler + TKA/HOTS)**: subbagian Soal Reguler dan Soal TKA/HOTS.
+
+Nomor soal tetap berurutan sesuai kisi-kisi dan kunci. Bagian tanpa soal tidak dicetak. Naskah mencantumkan identitas peserta, durasi, serta rentang opsi yang dipilih, tanpa kunci atau pembahasan. Penanda tebal Markdown dan nomor/huruf opsi ganda dibersihkan saat penataan naskah. Perubahan format berlaku pada ekspor baru; ZIP riwayat lama tetap merupakan salinan hasil sebelumnya.
+
+Uji ekspor: `python -m unittest discover -s tests -v`.
