@@ -6,7 +6,7 @@ import streamlit as st
 from streamlit.errors import StreamlitSecretNotFoundError
 
 from engine import (MAX_CHARS, MODEL, TITLES, TYPES, curriculum, export_doc,
-                    extract, generate_batch, plan, validate_curriculum, document_filename, document_title)
+                    extract, generate_batch, plan, validate_curriculum, document_filename, document_title, export_zip, package_name)
 
 from ui import apply_style, hero, next_step, overview, section
 
@@ -165,6 +165,13 @@ if current == len(targets):
     if st.button("Siapkan tujuh dokumen Word"):
         st.session_state["exports"] = [export_doc(i, config, outline, items) for i in range(len(TITLES))]
     if "exports" in st.session_state:
+        st.download_button(
+            f"Unduh semua — {mapel.strip()} Kelas {kelas.strip()} (ZIP)",
+            export_zip(config, st.session_state["exports"]),
+            file_name=f"{package_name(config)}.zip", mime="application/zip",
+            type="primary", key="download_zip",
+        )
+        st.caption("ZIP berisi satu folder dengan tujuh dokumen Word. Ekstrak ZIP untuk membuka foldernya, atau unduh dokumen satu per satu di bawah.")
         for index, (title, data) in enumerate(zip(TITLES, st.session_state["exports"]), 1):
             filename = document_filename(index - 1, config)
             st.download_button(f"Unduh {index:02d} {document_title(index - 1, config)}", data, file_name=filename,

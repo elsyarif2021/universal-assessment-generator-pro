@@ -2,6 +2,7 @@ import json
 import re
 from io import BytesIO
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import requests
 from docx import Document
@@ -219,11 +220,27 @@ def document_title(index, config):
     return f"{TITLES[index]} — {config['mapel'].strip()} Kelas {config['kelas'].strip()}"
 
 
+def filename_component(value):
+    # Keep Unicode names while removing separators and unsafe filename characters.
+    return re.sub(r"[^\w-]+", "_", value.strip(), flags=re.UNICODE).strip("_") or "Asesmen"
+
+
 def document_filename(index, config):
-    # Keep Unicode subject names while removing path separators and unsafe characters.
-    def component(value):
-        return re.sub(r"[^\w-]+", "_", value.strip(), flags=re.UNICODE).strip("_") or "Asesmen"
-    return f"{index + 1:02d}_{component(TITLES[index])}_{component(config['mapel'])}_Kelas_{component(config['kelas'])}.docx"
+    return f"{index + 1:02d}_{filename_component(TITLES[index])}_{filename_component(config['mapel'])}_Kelas_{filename_component(config['kelas'])}.docx"
+
+
+def package_name(config):
+    return f"Asesmen_{filename_component(config['mapel'])}_Kelas_{filename_component(config['kelas'])}"
+
+
+def export_zip(config, documents):
+    if len(documents) != len(TITLES):
+        raise ValueError("Paket ZIP harus berisi tujuh dokumen Word.")
+    buf = BytesIO()
+    with ZipFile(buf, "w", compression=ZIP_DEFLATED) as archive:
+        for index, data in enumerate(documents):
+            archive.writestr(f"{package_name(config)}/{document_filename(index, config)}", data)
+    return buf.getvalue()
 
 
 def export_doc(index, config, outline, rows):

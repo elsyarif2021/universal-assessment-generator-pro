@@ -38,3 +38,7 @@ Materi dikirim ke Ollama Cloud saat generasi. Hindari data pribadi siswa. Nilai 
 Antarmuka memakai palet hijau zamrud, emas, dan gading, dengan basmalah serta ornamen geometris Islami. Sidebar menjelaskan tiga tahap penyusunan; ringkasan menampilkan jumlah soal, durasi, bahasa, dan keluaran dokumen. Tata letak menyesuaikan layar ponsel.
 
 Gaya visual berada di `style.css`, komponen presentasi di `ui.py`, dan tema dasar di `.streamlit/config.toml`. Tidak memerlukan font, gambar, atau dependensi baru dari layanan eksternal. Alur generasi dan ekspor dokumen tetap menggunakan `engine.py`.
+
+## Unduh paket lengkap
+
+Setelah seluruh soal selesai, klik **Siapkan tujuh dokumen Word**, lalu **Unduh semua (ZIP)**. Arsip bernama `Asesmen_Sosiologi_Kelas_XII.zip` (mengikuti input) berisi folder dengan nama yang sama dan tujuh DOCX bernomor. Ekstrak ZIP untuk mendapatkan folder. Unduhan dokumen satu per satu tetap tersedia.
